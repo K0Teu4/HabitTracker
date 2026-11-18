@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Habit Tracker</string>
+    <string name="today">Сегодня</string>
+    <string name="habits">Привычки</string>
+    <string name="calendar">Календарь</string>
+    <string name="stats">Статистика</string>
+    <string name="settings">Настройки</string>
+    <string name="add_habit">Добавить привычку</string>
+    <string name="edit_habit">Редактировать</string>
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+    <string name="delete">Удалить</string>
+    <string name="archive">В архив</string>
+    <string name="title">Название</string>
+    <string name="description">Описание</string>
+    <string name="frequency">Частота</string>
+    <string name="daily">Каждый день</string>
+    <string name="specific_days">Выбранные дни</string>
+    <string name="times_per_week">Раз в неделю</string>
+    <string name="reminder">Напоминание</string>
+    <string name="current_streak">Текущая серия</string>
+    <string name="best_streak">Лучшая серия</string>
+    <string name="no_habits">Пока нет привычек.\nДобавьте первую!</string>
+    <string name="completed">Выполнено</string>
+    <string name="not_completed">Не выполнено</string>
+</resources>
