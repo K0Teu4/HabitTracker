@@ -77,6 +77,9 @@ class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
     val activeHabits = repository.getActiveHabits()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val archivedHabits = repository.getArchivedHabits()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun toggleHabit(habitId: Long, date: LocalDate = LocalDate.now()) {
         viewModelScope.launch {
             repository.toggleHabit(habitId, date)
@@ -101,6 +104,13 @@ class HabitViewModel(private val repository: HabitRepository) : ViewModel() {
     fun archiveHabit(id: Long) {
         viewModelScope.launch {
             repository.archiveHabit(id)
+            refreshTrigger.value = System.currentTimeMillis()
+        }
+    }
+
+    fun unarchiveHabit(id: Long) {
+        viewModelScope.launch {
+            repository.unarchiveHabit(id)
             refreshTrigger.value = System.currentTimeMillis()
         }
     }

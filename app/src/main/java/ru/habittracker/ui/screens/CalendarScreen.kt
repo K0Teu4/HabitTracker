@@ -12,10 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -27,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,9 +41,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ru.habittracker.ui.theme.Dimens
 import ru.habittracker.viewmodel.CalendarDayStatus
 import ru.habittracker.viewmodel.HabitViewModel
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -64,9 +64,10 @@ fun CalendarScreen(viewModel: HabitViewModel) {
 
     val statusMap = remember(days) { days.associateBy { it.date } }
     val today = LocalDate.now()
+    val scheme = MaterialTheme.colorScheme
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = scheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
@@ -74,7 +75,8 @@ fun CalendarScreen(viewModel: HabitViewModel) {
                 title = {
                     Text(
                         yearMonth.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale("ru"))
-                            .replaceFirstChar { it.titlecase(Locale("ru")) } + " " + yearMonth.year
+                            .replaceFirstChar { it.titlecase(Locale("ru")) } + " " + yearMonth.year,
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
@@ -86,7 +88,8 @@ fun CalendarScreen(viewModel: HabitViewModel) {
                     IconButton(onClick = { yearMonth = yearMonth.plusMonths(1) }) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Следующий")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = scheme.background)
             )
         }
     ) { padding ->
@@ -94,9 +97,8 @@ fun CalendarScreen(viewModel: HabitViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = Dimens.screenHorizontal)
         ) {
-            // Дни недели
             Row(modifier = Modifier.fillMaxWidth()) {
                 listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс").forEach { d ->
                     Text(
@@ -104,61 +106,63 @@ fun CalendarScreen(viewModel: HabitViewModel) {
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = scheme.onSurfaceVariant
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.space2))
 
             if (loading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Загрузка…")
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Загрузка…", color = scheme.onSurfaceVariant)
                 }
             } else {
                 val firstDay = yearMonth.atDay(1)
-                // Monday = 1 ... Sunday = 7 → offset 0..6
                 val startOffset = firstDay.dayOfWeek.value - 1
                 val daysInMonth = yearMonth.lengthOfMonth()
-                val totalCells = startOffset + daysInMonth
-                val rows = (totalCells + 6) / 7
+                val totalCells = ((startOffset + daysInMonth + 6) / 7) * 7
 
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    for (row in 0 until rows) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (rowStart in 0 until totalCells step 7) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             for (col in 0..6) {
-                                val cellIndex = row * 7 + col
+                                val cellIndex = rowStart + col
                                 val dayNumber = cellIndex - startOffset + 1
-                                if (dayNumber in 1..daysInMonth) {
-                                    val date = yearMonth.atDay(dayNumber)
-                                    val status = statusMap[date]
-                                    DayCell(
-                                        day = dayNumber,
-                                        status = status,
-                                        isToday = date == today,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                } else {
-                                    Spacer(modifier = Modifier.weight(1f).aspectRatio(1f))
+                                Box(modifier = Modifier.weight(1f)) {
+                                    if (dayNumber in 1..daysInMonth) {
+                                        val date = yearMonth.atDay(dayNumber)
+                                        DayCell(
+                                            day = dayNumber,
+                                            status = statusMap[date],
+                                            isToday = date == today,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    } else {
+                                        Spacer(
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .aspectRatio(1f)
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(Modifier.height(Dimens.space6))
 
-                // Легенда
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    LegendItem(Color(0xFF4CAF50).copy(alpha = 0.7f), "Всё")
-                    LegendItem(Color(0xFFFF9800).copy(alpha = 0.5f), "Частично")
-                    LegendItem(MaterialTheme.colorScheme.surfaceVariant, "Пусто / нет")
+                    LegendItem(Color(0xFF2F8F6B).copy(alpha = 0.85f), "Всё")
+                    LegendItem(Color(0xFFC4841D).copy(alpha = 0.7f), "Частично")
+                    LegendItem(scheme.surfaceVariant, "Пусто")
                 }
             }
         }
@@ -172,11 +176,20 @@ private fun DayCell(
     isToday: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val scheme = MaterialTheme.colorScheme
+    val completed = status?.completed ?: 0
+    val total = status?.total ?: 0
+
     val bg = when {
-        status == null || status.total == 0 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        status.completed >= status.total -> Color(0xFF4CAF50).copy(alpha = 0.75f)
-        status.completed > 0 -> Color(0xFFFF9800).copy(alpha = 0.55f)
-        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        total <= 0 -> scheme.surfaceVariant.copy(alpha = 0.55f)
+        completed >= total -> Color(0xFF2F8F6B).copy(alpha = 0.85f)
+        completed > 0 -> Color(0xFFC4841D).copy(alpha = 0.7f)
+        else -> scheme.surfaceVariant.copy(alpha = 0.75f)
+    }
+
+    val fg = when {
+        total > 0 && completed >= total -> Color.White
+        else -> scheme.onSurface
     }
 
     Box(
@@ -185,25 +198,23 @@ private fun DayCell(
             .clip(RoundedCornerShape(10.dp))
             .background(bg)
             .then(
-                if (isToday) Modifier.border(
-                    2.dp,
-                    MaterialTheme.colorScheme.primary,
-                    RoundedCornerShape(10.dp)
-                ) else Modifier
+                if (isToday) Modifier.border(2.dp, scheme.primary, RoundedCornerShape(10.dp))
+                else Modifier
             ),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = day.toString(),
-                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                fontSize = 14.sp
+                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
+                fontSize = 14.sp,
+                color = fg
             )
-            if (status != null && status.total > 0) {
+            if (total > 0) {
                 Text(
-                    text = "${status.completed}/${status.total}",
+                    text = "$completed/$total",
                     fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    color = fg.copy(alpha = 0.9f)
                 )
             }
         }
@@ -215,11 +226,11 @@ private fun LegendItem(color: Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
-                .size(14.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .size(12.dp)
+                .clip(RoundedCornerShape(3.dp))
                 .background(color)
         )
-        Spacer(modifier = Modifier.padding(horizontal = 4.dp))
+        Spacer(Modifier.padding(horizontal = 4.dp))
         Text(label, style = MaterialTheme.typography.labelSmall)
     }
 }

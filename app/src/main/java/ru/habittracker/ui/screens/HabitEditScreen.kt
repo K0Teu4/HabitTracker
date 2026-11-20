@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -28,9 +28,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +44,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ru.habittracker.data.model.FrequencyType
 import ru.habittracker.data.model.Habit
@@ -60,7 +63,9 @@ private val presetColors = listOf(
     HabitEmerald, HabitBlue, HabitAmber, HabitViolet, HabitRose, HabitSlate
 )
 
-private val dayLabels = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
+// Однобуквенные — не ломаются в узкой строке
+private val dayLetters = listOf("П", "В", "С", "Ч", "П", "С", "В")
+private val dayFull = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,14 +75,15 @@ fun HabitEditScreen(
     onBack: () -> Unit
 ) {
     val isNew = habitId == 0L
+    val scheme = MaterialTheme.colorScheme
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var color by remember { mutableLongStateOf(HabitEmerald.toArgb().toLong()) }
     var frequencyType by remember { mutableStateOf(FrequencyType.DAILY) }
-    var reminderEnabled by remember { mutableStateOf(false) }
     var daysMask by remember { mutableIntStateOf(0b1111111) }
     var loaded by remember { mutableStateOf(isNew) }
+    var titleError by remember { mutableStateOf(false) }
 
     LaunchedEffect(habitId) {
         if (!isNew) {
@@ -87,7 +93,6 @@ fun HabitEditScreen(
                 description = habit.description.orEmpty()
                 color = habit.color
                 frequencyType = habit.frequencyType
-                reminderEnabled = habit.reminderEnabled
                 daysMask = habit.daysOfWeekMask
             }
             loaded = true
@@ -95,28 +100,32 @@ fun HabitEditScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = scheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 windowInsets = WindowInsets.statusBars,
-                title = { Text(if (isNew) "Новая привычка" else "Редактирование") },
+                title = {
+                    Text(
+                        if (isNew) "Новая привычка" else "Редактирование",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = scheme.background)
             )
         }
     ) { padding ->
         if (!loaded) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Загрузка…")
+                Text("Загрузка…", color = scheme.onSurfaceVariant)
             }
             return@Scaffold
         }
@@ -125,56 +134,65 @@ fun HabitEditScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Dimens.screenHorizontal)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(Dimens.space2))
 
             OutlinedTextField(
                 value = title,
-                onValueChange = { title = it },
+                onValueChange = {
+                    title = it
+                    if (titleError && it.isNotBlank()) titleError = false
+                },
                 label = { Text("Название") },
                 singleLine = true,
+                isError = titleError,
+                supportingText = if (titleError) {
+                    { Text("Введите название") }
+                } else null,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(Dimens.space3))
 
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Описание (необязательно)") },
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("Заметка (необязательно)") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.space5))
 
-            Text("Цвет", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Цвет", style = MaterialTheme.typography.titleSmall, color = scheme.onSurfaceVariant)
+            Spacer(Modifier.height(Dimens.space2))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 presetColors.forEach { c ->
                     val selected = color == c.toArgb().toLong()
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(if (selected) 40.dp else 36.dp)
                             .clip(CircleShape)
                             .background(c)
                             .then(
-                                if (selected) Modifier.border(
-                                    3.dp,
-                                    MaterialTheme.colorScheme.onBackground,
-                                    CircleShape
-                                ) else Modifier
+                                if (selected) Modifier.border(3.dp, scheme.onBackground, CircleShape)
+                                else Modifier
                             )
                             .clickable { color = c.toArgb().toLong() }
+                            .semantics { contentDescription = "Цвет" }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.space5))
 
-            Text("Частота", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text("Как часто", style = MaterialTheme.typography.titleSmall, color = scheme.onSurfaceVariant)
+            Spacer(Modifier.height(Dimens.space2))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = frequencyType == FrequencyType.DAILY,
@@ -189,53 +207,88 @@ fun HabitEditScreen(
             }
 
             if (frequencyType == FrequencyType.SPECIFIC_DAYS) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(Dimens.space3))
+                // Круги дней — без FilterChip, чтобы не ломалась вёрстка
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    dayLabels.forEachIndexed { index, label ->
+                    dayLetters.forEachIndexed { index, letter ->
                         val bit = 1 shl index
                         val selected = (daysMask and bit) != 0
-                        FilterChip(
-                            selected = selected,
-                            onClick = {
-                                daysMask = if (selected) daysMask and bit.inv() else daysMask or bit
-                            },
-                            label = { Text(label) },
-                            modifier = Modifier.weight(1f)
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (selected) scheme.primary
+                                        else scheme.surfaceVariant
+                                    )
+                                    .clickable {
+                                        daysMask = if (selected) {
+                                            daysMask and bit.inv()
+                                        } else {
+                                            daysMask or bit
+                                        }
+                                    }
+                                    .semantics {
+                                        contentDescription = dayFull[index] + if (selected) ", выбран" else ""
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = letter,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (selected) scheme.onPrimary else scheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
+                }
+                if (daysMask == 0) {
+                    Text(
+                        "Выберите хотя бы один день",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.error,
+                        modifier = Modifier.padding(top = Dimens.space2)
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(Dimens.space5))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(Dimens.radiusMd))
+                    .background(scheme.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(horizontal = Dimens.space3, vertical = Dimens.space3),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Напоминание", style = MaterialTheme.typography.titleMedium)
+                    Text("Напоминание", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Скоро",
+                        "Появится в следующих версиях",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = scheme.onSurfaceVariant
                     )
                 }
-                Switch(
-                    checked = false,
-                    onCheckedChange = null,
-                    enabled = false
-                )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(Dimens.space6))
 
             Button(
                 onClick = {
-                    if (title.isBlank()) return@Button
+                    if (title.isBlank()) {
+                        titleError = true
+                        return@Button
+                    }
+                    if (frequencyType == FrequencyType.SPECIFIC_DAYS && daysMask == 0) {
+                        return@Button
+                    }
                     val habit = Habit(
                         id = if (isNew) 0 else habitId,
                         title = title.trim(),
@@ -249,12 +302,13 @@ fun HabitEditScreen(
                     onBack()
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank() &&
+                    !(frequencyType == FrequencyType.SPECIFIC_DAYS && daysMask == 0)
             ) {
-                Text("Сохранить")
+                Text(if (isNew) "Создать" else "Сохранить")
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(Dimens.space8))
         }
     }
 }
