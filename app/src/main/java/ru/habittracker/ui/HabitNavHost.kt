@@ -1,14 +1,16 @@
 package ru.habittracker.ui
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +46,7 @@ sealed class Screen(
     val unselectedIcon: ImageVector
 ) {
     data object Today : Screen("today", "Сегодня", Icons.Filled.CheckCircle, Icons.Outlined.CheckCircle)
-    data object Habits : Screen("habits", "Привычки", Icons.Filled.List, Icons.Outlined.List)
+    data object Habits : Screen("habits", "Привычки", Icons.AutoMirrored.Filled.List, Icons.AutoMirrored.Outlined.List)
     data object Calendar : Screen("calendar", "Календарь", Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth)
     data object Settings : Screen("settings", "Настройки", Icons.Filled.Settings, Icons.Outlined.Settings)
 }
@@ -59,18 +61,18 @@ fun HabitNavHost() {
     )
 
     val items = listOf(Screen.Today, Screen.Habits, Screen.Calendar, Screen.Settings)
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+    val showBottomBar = currentDestination?.route in items.map { it.route }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentDestination = navBackStackEntry?.destination
-
-            // Скрываем bottom bar на экране редактирования
-            val showBottomBar = currentDestination?.route in items.map { it.route }
-
             if (showBottomBar) {
-                NavigationBar {
+                NavigationBar(
+                    windowInsets = WindowInsets.navigationBars
+                ) {
                     items.forEach { screen ->
                         val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                         NavigationBarItem(
@@ -100,7 +102,7 @@ fun HabitNavHost() {
         NavHost(
             navController = navController,
             startDestination = Screen.Today.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             composable(Screen.Today.route) {
                 TodayScreen(
@@ -120,12 +122,12 @@ fun HabitNavHost() {
                 CalendarScreen(viewModel = viewModel)
             }
             composable(Screen.Settings.route) {
-                SettingsScreen()
+                SettingsScreen(userPrefs = app.userPrefs)
             }
-            composable("edit/{habitId}") { backStackEntry ->
-                val habitId = backStackEntry.arguments?.getString("habitId")?.toLongOrNull() ?: 0L
+            composable("edit/{habitId}") { entry ->
+                val id = entry.arguments?.getString("habitId")?.toLongOrNull() ?: 0L
                 HabitEditScreen(
-                    habitId = habitId,
+                    habitId = id,
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() }
                 )

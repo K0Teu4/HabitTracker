@@ -1,34 +1,16 @@
-# Habit Tracker 0.3.0
+# Habit Tracker 0.4.0
 
-Минималистичный Android-трекер привычек.  
-Дизайн: **Quiet Precision** (семейство приложений K0Teu4).
+Минималистичный Android-трекер привычек. Quiet Precision.
 
-## Акцент продукта
+## 0.4.0
 
-- **Emerald** `#2F8F6B` — рост и устойчивость привычки  
-- Спокойные поверхности, явная иерархия, без лишних карточек и градиентов  
-- Список «Сегодня» как основной рабочий экран  
+- Компактные заголовки (без лишнего отступа под статус-баром)
+- Тёмная / светлая / системная тема (Настройки → Тема)
+- Онбординг при первом запуске (3 экрана, можно пропустить)
+- Один FAB на пустом «Сегодня» (без дубля)
+- AutoMirrored иконки в навигации
 
-## Возможности
-
-- Привычки: создание, правка, архив, удаление  
-- Отметка дня, streak (текущий / лучший)  
-- Календарь месяца с индикацией выполнения  
-- Частота: каждый день / выбранные дни недели  
-- Локальная БД (Room), offline-first  
-
-## Стек
-
-Kotlin · Jetpack Compose · Material 3 · Room · Navigation · ViewModel · Flow  
-minSdk 26 · targetSdk 35 · versionName **0.3.0**
-
-## Сборка (PowerShell + ADB)
-
-```powershell
-.\run-build-and-install.cmd
-```
-
-Или:
+## Сборка
 
 ```powershell
 .\gradlew.bat --no-daemon assembleDebug
@@ -36,6 +18,8 @@ adb install -r app\build\outputs\apk\debug\app-debug.apk
 adb shell am start -n ru.habittracker/.MainActivity
 ```
 
-## Репозиторий
+Чтобы снова увидеть онбординг:
 
-https://github.com/K0Teu4/HabitTracker
+```powershell
+adb shell pm clear ru.habittracker
+```
