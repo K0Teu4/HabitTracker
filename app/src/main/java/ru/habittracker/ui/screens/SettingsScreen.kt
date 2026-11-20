@@ -69,7 +69,7 @@ fun SettingsScreen(userPrefs: UserPrefs) {
 
         Spacer(Modifier.height(Dimens.space6))
         SettingsGroup("О приложении")
-        SettingsRow(title = "Версия", value = "0.4.0")
+        SettingsRow(title = "Версия", value = "0.5.0")
         Text(
             "Quiet Precision · Habit Tracker",
             style = MaterialTheme.typography.bodySmall,

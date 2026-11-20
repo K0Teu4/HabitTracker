@@ -190,7 +190,10 @@ fun HabitEditScreen(
 
             if (frequencyType == FrequencyType.SPECIFIC_DAYS) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     dayLabels.forEachIndexed { index, label ->
                         val bit = 1 shl index
                         val selected = (daysMask and bit) != 0
@@ -199,7 +202,8 @@ fun HabitEditScreen(
                             onClick = {
                                 daysMask = if (selected) daysMask and bit.inv() else daysMask or bit
                             },
-                            label = { Text(label) }
+                            label = { Text(label) },
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -212,8 +216,19 @@ fun HabitEditScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Напоминание", style = MaterialTheme.typography.titleMedium)
-                Switch(checked = reminderEnabled, onCheckedChange = { reminderEnabled = it })
+                Column {
+                    Text("Напоминание", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Скоро",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = false,
+                    onCheckedChange = null,
+                    enabled = false
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -228,7 +243,7 @@ fun HabitEditScreen(
                         color = color,
                         frequencyType = frequencyType,
                         daysOfWeekMask = if (frequencyType == FrequencyType.DAILY) 0b1111111 else daysMask,
-                        reminderEnabled = reminderEnabled
+                        reminderEnabled = false
                     )
                     if (isNew) viewModel.addHabit(habit) else viewModel.updateHabit(habit)
                     onBack()
